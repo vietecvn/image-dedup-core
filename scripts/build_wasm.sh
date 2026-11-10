@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 OUT=build/wasm
 mkdir -p "$OUT/obj"
 # -ffp-contract=off: bắt buộc để ra cùng byte với bản Android/iOS. Không -ffast-math.
-DET="-O3 -ffp-contract=off -fno-fast-math"
+DET="-O3 -ffp-contract=off -fno-fast-math -fwrapv"
 INC="-Iinclude -Ithird_party/libwebp"
 
 objs=()

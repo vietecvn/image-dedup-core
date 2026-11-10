@@ -60,6 +60,7 @@ Kết quả đúng là hai dòng `OK`. Test có giá trị chuẩn SHA-256, nên
 | Cờ | Lý do |
 |---|---|
 | `-ffp-contract=off`, không dùng `-ffast-math` | Cấm gộp phép nhân và cộng (FMA), nhờ đó ra cùng byte với ARM64 |
+| `-fwrapv` | Tràn số nguyên có dấu (gặp khi giải mã ảnh giả mạo) có kết quả xác định, giống nhau mọi nền tảng |
 | `-DHAVE_CONFIG_H` khi build libwebp | Tắt SIMD của libwebp |
 | `-sSTACK_SIZE=1048576` | Stack mặc định của Emscripten chỉ 64 KB, bị tràn khi giải mã ảnh |
 | `-sALLOW_MEMORY_GROWTH=1`, `-sMAXIMUM_MEMORY=1073741824` | Ảnh 50 MP giải mã ra khoảng 200 MB |
@@ -265,7 +266,7 @@ Hiện **cả hai nền tảng đều dùng giá trị mặc định của lõi 
 | Số lần hạ cạnh dài | **3 lần**, mỗi lần nhân 0,8 | 1600 → 1280 → 1024 → 819 | `kMaxEdgeReductions` và `(longest * 4 + 2) / 5` trong `src/image_pipeline.cpp` | Có |
 | Dung lượng file đầu vào tối đa | **64 MB** | File lớn hơn báo `file-too-large` | `IHD_MAX_INPUT_BYTES` | Có |
 | Kích thước tính dấu vân tay | **512 px** | Thu ảnh về cạnh dài 512 trước khi tính pHash/dHash | `kFingerprintMaxEdge` trong `src/image_pipeline.cpp` | Có |
-| Ngưỡng `duplicate` | pHash **≤ 6** và dHash **≤ 10** (bit lệch / 64) | Coi là cùng một ảnh | **3 nơi, phải sửa cùng lúc:** `src/image_dedup.cpp`, `bindings/js/dedupMatch.ts`, `bindings/dart/image_dedup.dart` (và bản chép ở `hanoicheck/packages/image_dedup/lib`) | C: có; TS/Dart: không |
+| Ngưỡng `duplicate` | pHash **≤ 6** và dHash **≤ 10** (bit lệch / 64) | Coi là cùng một ảnh | **3 nơi, phải sửa cùng lúc:** `src/image_dedup.cpp`, `bindings/js/dedupMatch.ts`, `flutter/lib/image_dedup.dart` | C: có; TS/Dart: không |
 | Ngưỡng `similar` | pHash **≤ 12** và dHash **≤ 16** | Nghi trùng (hiện không cảnh báo) | 3 nơi như trên | Như trên |
 | Phiên bản thuật toán | **2** | Dấu vân tay chỉ so được giữa cùng phiên bản | `IHD_ALGORITHM_VERSION` | Có |
 
@@ -275,7 +276,7 @@ Hiện **cả hai nền tảng đều dùng giá trị mặc định của lõi 
 3. Cập nhật giá trị chuẩn SHA trong `tests/pipeline_test.cpp`, chạy `scripts/build_native.sh` và `scripts/build_wasm.sh --test`.
 4. Chép sang **cả hai** nơi:
    - mini app: `bindings/js/*` và file `.mjs` mới;
-   - app Flutter: `src/` → `hanoicheck/packages/image_dedup/src/core`, `include/`, `third_party/`, cùng `bindings/dart/image_dedup.dart` → `packages/image_dedup/lib/`.
+   - app Flutter: không chép gì. Commit, tạo tag mới (ví dụ `v1.2.0-mobile`), push, rồi đổi `ref` của dependency `image_dedup` trong `pubspec.yaml` của app và chạy `fvm flutter pub get`.
 5. Phát hành hai bản **cùng lúc**. Nếu một bên còn bản cũ, cùng một ảnh sẽ cho hai SHA khác nhau.
 
 ### 5.2. Thông số **riêng** từng nền tảng: không ảnh hưởng tới byte đầu ra

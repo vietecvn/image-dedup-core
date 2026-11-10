@@ -1,0 +1,25 @@
+name: image_dedup
+description: "Lõi C/C++ nén ảnh tất định và check trùng ảnh dưới client (FFI) – bản đóng gói của image-dedup-core cho app Check Hà Nội."
+version: 0.2.0
+publish_to: none
+
+environment:
+  sdk: ">=3.13.7 <4.0.0"
+  flutter: ">=3.44.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true

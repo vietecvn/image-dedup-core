@@ -1,0 +1,48 @@
+// Android Gradle Plugin build lõi C/C++ bằng NDK qua CMake dùng chung (../src).
+
+group = "com.vietec.hanoicheck.image_dedup"
+version = "1.0"
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:9.0.1")
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "com.vietec.hanoicheck.image_dedup"
+    compileSdk = 36
+
+    // Dùng đúng NDK mà app khai báo trong android/app/build.gradle.
+    ndkVersion = android.ndkVersion
+
+    externalNativeBuild {
+        cmake {
+            // CMake gốc của repo: build đúng mã nguồn src/ + third_party/, không chép.
+            path = "../../CMakeLists.txt"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk = 24
+    }
+}

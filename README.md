@@ -65,7 +65,7 @@ src/stb_impl.cpp           cài đặt stb + cờ ổn định
 third_party/stb_*.h        stb_image v2.30, stb_image_write v1.16 (commit f58f558c, public domain)
 third_party/libwebp/       libwebp v1.5.0, CHỈ phần giải mã (BSD, kèm COPYING/PATENTS)
                            + src/webp/config.h tự thêm để tắt SIMD
-bindings/dart/             FFI + findDuplicate / compareFingerprints (Dart thuần)
+flutter/                   plugin FFI cho Flutter (lib/image_dedup.dart: ImageDedup, findDuplicate)
 bindings/js/               imageDedupClient (Worker + đường lùi), worker, lõi WASM, dedupMatch (TS thuần)
 tools/ihd_cli.cpp          CLI in JSON, dùng để so giữa các nền tảng
 tests/                     image_dedup_test, pipeline_test, real_images_test, fuzz_pipeline,
@@ -139,14 +139,24 @@ Bên app chủ cần:
 
 ## Flutter (Android / iOS)
 
-Tạo FFI plugin riêng: `flutter create --template=plugin_ffi image_dedup`. Chép `include/`, `src/`, `third_party/` vào plugin.
+Plugin FFI nằm ngay trong repo này ở thư mục **`flutter/`** (package `image_dedup`). Plugin build trực tiếp mã nguồn ở gốc repo, không có bản chép:
 
-- **Android:** dùng `CMakeLists.txt` của repo này. Đã kiểm chứng với NDK: xuất 29 hàm `ihd_*`, căn trang 16 KB.
-- **iOS:** đưa `src/*.cpp` và các file `.c` của libwebp vào `ios/Classes/`. Trong podspec cần:
-  - `HEADER_SEARCH_PATHS` trỏ tới `include` và `third_party/libwebp`;
-  - `GCC_PREPROCESSOR_DEFINITIONS` có `HAVE_CONFIG_H=1`;
-  - `OTHER_CFLAGS` có `-ffp-contract=off`.
-- Binding mở `image_dedup.framework/image_dedup` trước, rồi tới `process()`. Thiếu symbol thì báo `StateError` rõ ràng.
+- **Android:** `flutter/android/build.gradle` gọi `../../CMakeLists.txt` (NDK). Thư viện chỉ xuất 29 hàm `ihd_*` (`image_dedup.map`) và căn trang 16 KB.
+- **iOS:** `flutter/ios/image_dedup.podspec`, với các file chuyển tiếp trong `flutter/ios/Classes/` để `#include` thẳng `../../../src/*.cpp` và `../../../third_party/libwebp/...`.
+- **Cờ build:** `-ffp-contract=off -fno-fast-math -fwrapv -fvisibility=hidden`, kèm `HAVE_CONFIG_H=1 WEBP_EXTERN=extern`.
+
+Khai báo trong app (dependency kiểu git, có `path` trỏ tới thư mục plugin):
+
+```yaml
+dependencies:
+  image_dedup:
+    git:
+      url: https://github.com/vietecvn/image-dedup-core.git
+      ref: v1.1.0-mobile   # nên ghim tag; mỗi lần đổi lõi C thì tạo tag mới
+      path: flutter
+```
+
+Binding mở `image_dedup.framework/image_dedup` trước, rồi tới `process()`. Thiếu symbol thì báo `StateError` rõ ràng. Ảnh chọn từ thư viện phải là **file gốc** (không truyền `imageQuality` / `maxWidth` cho `image_picker`). Ảnh HEIC thì app tự giải mã bằng hệ điều hành rồi đưa vào lõi C (xem `ImageCompressor.compressMealPhoto` trong app).
 
 ```dart
 // Ảnh đã đăng: file trong cache của cached_network_image (hoặc tải về).
@@ -174,9 +184,9 @@ if (result.isOk) {
 | `duplicate` | pHash ≤ 6 và dHash ≤ 10 |
 | `similar` | pHash ≤ 12 và dHash ≤ 16 |
 
-Ngưỡng nằm ở 3 nơi và **phải sửa cùng lúc**: `src/image_dedup.cpp`, `bindings/js/dedupMatch.ts`, `bindings/dart/image_dedup.dart`.
+Ngưỡng nằm ở 3 nơi và **phải sửa cùng lúc**: `src/image_dedup.cpp`, `bindings/js/dedupMatch.ts`, `flutter/lib/image_dedup.dart`.
 
-**Bản đóng gói trong app Flutter:** `hanoicheck/packages/image_dedup` (`src/core` = `src/` ở đây). Sửa ở repo này, chạy test, rồi chép sang. Mọi bản build phải có `-DWEBP_EXTERN=extern` và chỉ xuất `ihd_*` (`image_dedup.map` trên Android, `-fvisibility=hidden` trên iOS) để libwebp bên trong không bị thư viện native khác chiếm lời gọi.
+**App Flutter** dùng thẳng plugin `flutter/` qua dependency git (không chép mã nguồn). Mọi bản build phải có `-fwrapv`, `-DWEBP_EXTERN=extern` và chỉ xuất `ihd_*` (`image_dedup.map` trên Android, `-fvisibility=hidden` trên iOS) để libwebp bên trong không bị thư viện native khác chiếm lời gọi.
 
 **Ngưỡng chưa đo trên ảnh bữa ăn thật.** Ảnh các ngày cùng khay, cùng góc chụp có thể bị coi là `similar`, nên UI nên hỏi lại người dùng thay vì chặn hẳn.
 
