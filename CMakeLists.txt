@@ -21,7 +21,9 @@ set(IMAGE_DEDUP_SOURCES
 #  không -ffast-math   : stb_impl.cpp sẽ #error nếu bật.
 #  x86 32-bit          : dùng SSE thay x87.
 #  ARMv7 32-bit        : tắt tự vector hoá (NEON 32-bit không theo IEEE).
-set(IMAGE_DEDUP_DETERMINISM_FLAGS -ffp-contract=off -fno-fast-math)
+#  -fwrapv             : tràn số nguyên có dấu (ảnh giả mạo trong IDCT của stb)
+#                        là hành vi xác định, giống nhau mọi nền tảng.
+set(IMAGE_DEDUP_DETERMINISM_FLAGS -ffp-contract=off -fno-fast-math -fwrapv)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86)$")
   list(APPEND IMAGE_DEDUP_DETERMINISM_FLAGS -msse2 -mfpmath=sse)
 endif()

@@ -14,7 +14,7 @@ OUT=${OUT:-build/host}
 OPT=${OPT:--O2}
 EXTRA=${EXTRA:-}
 # Cờ BẮT BUỘC cho mọi nền tảng (xem README "Cùng file gốc thì cùng byte đầu ra").
-DET="-ffp-contract=off -fno-fast-math"
+DET="-ffp-contract=off -fno-fast-math -fwrapv"
 INC="-Iinclude -Ithird_party/libwebp"
 
 mkdir -p "$OUT/obj"
