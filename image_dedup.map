@@ -1,0 +1,6 @@
+/* Chỉ xuất API ihd_*: libwebp, stb, libc++ tĩnh phải là symbol nội bộ để không
+ * bị thư viện native khác trong app "chiếm" lời gọi (ELF interposition). */
+{
+  global: ihd_*;
+  local: *;
+};
