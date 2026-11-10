@@ -262,17 +262,23 @@ class ImageDedup {
       );
     }
     if (Platform.isIOS || Platform.isMacOS) {
-      // Template `flutter create --template=plugin_ffi` build ra framework ĐỘNG
-      // -> phải mở theo tên framework. Chỉ khi tự liên kết tĩnh vào Runner mới
-      // tìm trong chính tiến trình (process); bản release khi đó cần giữ symbol.
-      try {
-        return _checked(
-          DynamicLibrary.open('image_dedup.framework/image_dedup'),
-          'image_dedup.framework',
-        );
-      } on ArgumentError {
-        return _checked(DynamicLibrary.process(), 'process (liên kết tĩnh)');
+      // Cả hai cách đóng gói đều ra framework ĐỘNG, khác tên:
+      // - Swift Package Manager: product `image-dedup` (Flutter bắt buộc gạch
+      //   ngang) -> image-dedup.framework/image-dedup.
+      // - CocoaPods: image_dedup.framework/image_dedup.
+      // Chỉ khi tự liên kết tĩnh vào Runner mới tìm trong chính tiến trình
+      // (process); bản release khi đó cần giữ symbol.
+      for (final framework in const [
+        'image-dedup.framework/image-dedup',
+        'image_dedup.framework/image_dedup',
+      ]) {
+        try {
+          return _checked(DynamicLibrary.open(framework), framework);
+        } on ArgumentError {
+          // Không có framework này -> thử cách đóng gói tiếp theo.
+        }
       }
+      return _checked(DynamicLibrary.process(), 'process (liên kết tĩnh)');
     }
     throw UnsupportedError(
       'image_dedup chưa hỗ trợ ${Platform.operatingSystem}',

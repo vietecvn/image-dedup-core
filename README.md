@@ -68,6 +68,9 @@ third_party/stb_*.h        stb_image v2.30, stb_image_write v1.16 (commit f58f55
 third_party/libwebp/       libwebp v1.5.0, CHỈ phần giải mã (BSD, kèm COPYING/PATENTS)
                            + src/webp/config.h tự thêm để tắt SIMD
 flutter/                   plugin FFI cho Flutter (lib/image_dedup.dart: ImageDedup, findDuplicate)
+  android/build.gradle     NDK, gọi ../../CMakeLists.txt
+  ios/image_dedup/         Package.swift (SwiftPM) + Sources/image_dedup (file chuyển tiếp, dùng chung)
+  ios/image_dedup.podspec  CocoaPods
 bindings/js/               imageDedupClient (Worker + đường lùi), worker, lõi WASM, dedupMatch (TS thuần)
 tools/ihd_cli.cpp          CLI in JSON, dùng để so giữa các nền tảng
 tests/                     image_dedup_test, pipeline_test, real_images_test, fuzz_pipeline,
@@ -144,7 +147,10 @@ Bên app chủ cần:
 Plugin FFI nằm ngay trong repo này ở thư mục **`flutter/`** (package `image_dedup`). Plugin build trực tiếp mã nguồn ở gốc repo, không có bản chép:
 
 - **Android:** `flutter/android/build.gradle` gọi `../../CMakeLists.txt` (NDK). Thư viện chỉ xuất 29 hàm `ihd_*` (`image_dedup.map`) và căn trang 16 KB.
-- **iOS:** `flutter/ios/image_dedup.podspec`, với các file chuyển tiếp trong `flutter/ios/Classes/` để `#include` thẳng `../../../src/*.cpp` và `../../../third_party/libwebp/...`.
+- **iOS:** hỗ trợ cả **Swift Package Manager** (`flutter/ios/image_dedup/Package.swift`) và **CocoaPods** (`flutter/ios/image_dedup.podspec`). Cả hai build chung các file chuyển tiếp trong `flutter/ios/image_dedup/Sources/image_dedup/`, mỗi file `#include` thẳng `../../../../../src/*.cpp` hoặc `../../../../../third_party/libwebp/...`. Cả hai đều ra framework **động**, chỉ khác tên: SwiftPM là `image-dedup.framework` (Flutter bắt buộc tên product dùng gạch ngang), CocoaPods là `image_dedup.framework`. Binding Dart thử lần lượt cả hai tên.
+  - Flutter 3.47 bật SwiftPM mặc định. Project nào tắt SwiftPM (`flutter: config: enable-swift-package-manager: false` trong pubspec) thì tự dùng CocoaPods.
+  - **Đổi cờ build thì sửa cả `Package.swift` lẫn `image_dedup.podspec`.** SwiftPM không cho đường dẫn header ra ngoài package, nên `Package.swift` truyền `-I` tuyệt đối (gốc repo lấy theo đường dẫn thật) cùng các cờ tất định qua `unsafeFlags`. Flutter nạp plugin dạng package theo đường dẫn nên được phép dùng.
+  - Đã kiểm (Flutter 3.47.8, Xcode, iOS 26.2 simulator): SwiftPM và CocoaPods ra **cùng SHA và cùng dấu vân tay** trên cùng ảnh. Bản release arm64 build bằng SwiftPM chỉ xuất 29 hàm `ihd_*`, symbol libwebp đều ẩn, không có lệnh FMA.
 - **Cờ build:** `-ffp-contract=off -fno-fast-math -fwrapv -fvisibility=hidden`, kèm `HAVE_CONFIG_H=1 WEBP_EXTERN=extern`.
 
 Khai báo trong app (dependency kiểu git, có `path` trỏ tới thư mục plugin):

@@ -1,7 +1,11 @@
 #
-# Lõi C/C++ image_dedup cho iOS. Podspec không nhận đường dẫn ra ngoài thư mục
-# pod, nên Classes/ chứa các file "chuyển tiếp" #include mã nguồn ở gốc repo (../../src, ../../third_party).
-# Mỗi file chuyển tiếp là một translation unit (tránh trùng hàm static).
+# Lõi C/C++ image_dedup cho iOS qua CocoaPods. Swift Package Manager dùng
+# image_dedup/Package.swift; cả hai build chung các file trong
+# image_dedup/Sources/image_dedup. Podspec không nhận đường dẫn ra ngoài thư mục
+# pod, nên đó là các file "chuyển tiếp" #include mã nguồn ở gốc repo
+# (../../../../../src, ../../../../../third_party). Mỗi file chuyển tiếp là một
+# translation unit (tránh trùng hàm static).
+# Đổi cờ build thì sửa CẢ HAI file này.
 #
 # Gốc repo image-dedup-core (chứa include/, src/, third_party/). Lấy đường dẫn
 # THẬT: Flutter trỏ tới plugin qua symlink (.symlinks/plugins/image_dedup), còn
@@ -17,7 +21,7 @@ Pod::Spec.new do |s|
   s.license          = { :type => 'Proprietary', :text => 'Copyright Vietec' }
   s.author           = { 'Vietec' => 'dev@vietec.com.vn' }
   s.source           = { :path => '.' }
-  s.source_files     = 'Classes/**/*'
+  s.source_files     = 'image_dedup/Sources/image_dedup/**/*.{c,cpp}'
   s.dependency 'Flutter'
   s.platform = :ios, '15.0'
 
