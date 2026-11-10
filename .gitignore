@@ -1,2 +1,5 @@
 build/
 .dart_tool/
+# Swift Package Manager (mở Package.swift bằng Xcode)
+.build/
+.swiftpm/

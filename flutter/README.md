@@ -5,7 +5,13 @@ gốc ⇒ cùng byte JPEG trên Android / iOS / mini app WASM) và SHA-256 + d�
 pHash/dHash để **check trùng ảnh dưới client**.
 
 Plugin không chứa bản sao mã nguồn C: Android build `../../CMakeLists.txt`, iOS dùng file
-chuyển tiếp trong `ios/Classes/` `#include` thẳng `../../../src` và `../../../third_party`.
+chuyển tiếp trong `ios/image_dedup/Sources/image_dedup/` `#include` thẳng
+`../../../../../src` và `../../../../../third_party`.
+
+iOS hỗ trợ cả Swift Package Manager (`ios/image_dedup/Package.swift`, ra
+`image-dedup.framework`) lẫn CocoaPods (`ios/image_dedup.podspec`, ra
+`image_dedup.framework`); hai cách dùng chung file nguồn và cho cùng byte đầu ra. Đổi cờ build
+thì sửa cả hai file.
 
 ```yaml
 dependencies:
