@@ -99,6 +99,8 @@ Bản armeabi-v7a thêm `EXTRA="-fno-vectorize -fno-slp-vectorize"`; CMake đã 
 
 ## Vue / mini app
 
+**Hướng dẫn đầy đủ (build WASM, nhúng vào mini app, cách dùng, bảng thông số chung với Flutter): [`docs/HUONG_DAN_VUE.md`](docs/HUONG_DAN_VUE.md).**
+
 1. Chạy `scripts/build_wasm.sh` (cần `brew install emscripten`). Script tạo `bindings/js/image_dedup_wasm.mjs`, khoảng 270 KB, có wasm nhúng sẵn.
 2. Copy cả thư mục `bindings/js/` vào dự án. Ứng dụng **chỉ import `imageDedupClient.ts`**.
 
