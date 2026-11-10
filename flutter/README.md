@@ -18,3 +18,8 @@ dependencies:
 
 API: `ImageDedup` (`compressFileInIsolate`, `fingerprintFilesInIsolate`, `fingerprintFile`,
 `fingerprintBytes`), `findDuplicate`, `compareFingerprints`. Xem README ở gốc repo.
+
+Ảnh HEIC/HEIF/AVIF: lõi C trả `ImageDedupStatus.unsupportedFormat`. App tự giải mã bằng hệ
+điều hành (`dart:ui`) rồi đưa PNG vào lõi C, nên vẫn có dấu vân tay để check trùng. Cùng một
+ảnh chọn trên app và mini app được nhận ra bằng dấu vân tay (`duplicate`), chỉ ảnh JPEG trên
+Android mới cùng SHA: xem `docs/TRUNG_ANH_APP_VA_MINIAPP.md`.

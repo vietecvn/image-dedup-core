@@ -24,6 +24,7 @@ Component Vue
 - **Vue không tự xử lý ảnh.** Toàn bộ việc giải mã, xoay theo EXIF, chuyển màu P3 sang sRGB, thu nhỏ và nén JPEG đều chạy trong C.
 - **Cùng một file gốc cho ra cùng byte JPEG** trên Vue, Android và iOS.
 - **Server không tham gia check trùng**, chỉ lưu nguyên byte ảnh. Client tải các ảnh đã đăng về, tính dấu vân tay, rồi tự so.
+- **Cùng một ảnh chọn trên app và mini app** (kể cả HEIC) được nhận ra bằng dấu vân tay; không phải lúc nào cũng cùng SHA. Xem [TRUNG_ANH_APP_VA_MINIAPP.md](TRUNG_ANH_APP_VA_MINIAPP.md).
 
 ---
 
@@ -233,6 +234,11 @@ const dedup = useImageDedup({
 
 Ảnh đi đường `fallback` có `engine: 'legacy'`, `fingerprint: null`, và **không so trùng được**: byte JPEG do canvas tạo ra không giống bản Flutter.
 
+Ảnh HEIC:
+- Thẻ chọn file giữ `accept="image/*"`, **không thêm `image/heic` / `image/heif`**. Trên iOS, WebKit khi đó tự đổi HEIC sang JPEG, lõi C đọc được và check trùng bằng dấu vân tay.
+- Trên Android, WebView trả HEIC gốc; lõi C và canvas đều không đọc được nên client trả `unsupported-format`. Hiện câu `imageDedupMessage('unsupported-format')` để người dùng chọn ảnh khác.
+- Chi tiết: [TRUNG_ANH_APP_VA_MINIAPP.md](TRUNG_ANH_APP_VA_MINIAPP.md).
+
 ### 4.5. Component mẫu
 
 `examples/vue/src/components/MealPhotoPicker.vue` là một component đầy đủ:
@@ -347,6 +353,7 @@ Cả ba ảnh có cùng dấu vân tay `dfd16c23308fd854ff7f3fd6efb69ec8`.
 | ESLint báo hàng nghìn lỗi | Chưa bỏ qua file `.mjs` | Thêm `ignores` (mục 3.2) |
 | Luôn trả `engine-unavailable` | WebView không có Worker/WASM, hoặc bị CSP chặn | Kiểm tra CSP `'wasm-unsafe-eval'`; truyền `fallback` |
 | `RuntimeError: memory access out of bounds` / `stack overflow` | File `.mjs` build thiếu `-sSTACK_SIZE` | Build lại bằng `scripts/build_wasm.sh` (đã có cờ này) |
-| SHA khác với Flutter dù cùng file gốc | Một bên chưa cập nhật bản mới, hoặc đầu vào thực ra khác byte (bộ chọn ảnh iOS tự đổi HEIC sang JPEG) | So `sourceSha256` trước: khác nhau nghĩa là đầu vào khác, khi đó chỉ so được bằng dấu vân tay |
+| SHA khác với Flutter dù cùng file gốc | Một bên chưa cập nhật bản mới, hoặc đầu vào thực ra khác byte (`image_picker` iOS luôn mã hoá lại JPEG; HEIC bị đổi sang JPEG khác nhau) | Bình thường trên iOS: so `sourceSha256` trước, khác nhau nghĩa là đầu vào khác, khi đó so bằng dấu vân tay (`duplicate`). Xem [TRUNG_ANH_APP_VA_MINIAPP.md](TRUNG_ANH_APP_VA_MINIAPP.md) |
+| Chọn ảnh HEIC trên Android báo "Định dạng ảnh này chưa được hỗ trợ" | Lõi C không đọc HEIC, WebView Android cũng không | Chỗ hở đã biết. Người dùng chọn ảnh JPEG; hoặc app chủ đổi HEIC sang JPEG trong `onShowFileChooser` |
 | `fingerprintUrl` trả `download-failed` | CORS hoặc thiếu token | Mở CORS cho domain mini app, hoặc truyền `download` |
 | UI giật khi chọn nhiều ảnh | Gọi thẳng `imageDedup.ts` trên luồng chính | Chỉ dùng `imageDedupClient.ts` / `useImageDedup()` |

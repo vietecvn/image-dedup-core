@@ -27,6 +27,8 @@ Lõi C/C++ xử lý ảnh và **check trùng ảnh ngay trên client**, dùng ch
 - **Dấu vân tay của ảnh mới được tính từ chính file JPEG đầu ra**, qua đúng hàm mà client dùng cho ảnh tải về. Vì server lưu nguyên byte, ảnh vừa đăng khi tải lại sẽ cho **cùng `sha256` và cùng dấu vân tay**.
 - **Cùng nội dung nhưng khác file vẫn bắt được.** Ví dụ ảnh gửi qua Zalo, chuyển sang WebP, P3 hay sRGB, hoặc bị nén lại: dấu vân tay chỉ lệch vài bit, nên so bằng khoảng cách Hamming.
 
+**Chọn cùng một file trên app và mini app** (kể cả HEIC): hai bên nhận ra trùng bằng dấu vân tay (`duplicate`); chỉ ảnh JPEG trên Android mới ra cùng SHA (`exact`), vì `image_picker` trên iOS luôn mã hoá lại ảnh và HEIC bị đổi sang JPEG theo cách riêng của từng nền tảng. Chi tiết từng trường hợp, việc mỗi bên phải làm và chỗ hở HEIC trên mini app Android: [docs/TRUNG_ANH_APP_VA_MINIAPP.md](docs/TRUNG_ANH_APP_VA_MINIAPP.md).
+
 ## Đã kiểm chứng
 
 | Nền tảng | Cách chạy | Kết quả |
@@ -47,7 +49,7 @@ Bộ so trùng viết thuần bằng Dart và bằng TS đều khớp `ihd_compa
 |---|---|
 | JPEG (baseline/progressive), PNG, BMP, GIF (khung đầu) | Hỗ trợ |
 | WebP tĩnh (lossy, lossless, có alpha) | Hỗ trợ (libwebp 1.5.0, tắt SIMD) |
-| WebP động, HEIC/HEIF, AVIF | `unsupported-format` (bên Vue tự lùi về cách nén cũ) |
+| WebP động, HEIC/HEIF, AVIF | `unsupported-format`. App Flutter tự giải mã bằng hệ điều hành rồi đưa lại lõi C; mini app Vue lùi về cách nén cũ (xem [docs/TRUNG_ANH_APP_VA_MINIAPP.md](docs/TRUNG_ANH_APP_VA_MINIAPP.md)) |
 | JPEG/WebP bị cắt cụt | `file-truncated`. Nhận đúng Motion Photo có video gắn sau EOI |
 | Display P3 trong JPEG (APP2), PNG (iCCP) hoặc WebP (ICCP) | Chuyển sang sRGB. Ảnh mẫu lệch **1,26/255** so với bản sRGB gốc; không chuyển thì lệch 3,20/255 |
 | Profile màu khác (Adobe RGB…) | Bỏ qua, coi như sRGB |
@@ -156,7 +158,7 @@ dependencies:
       path: flutter
 ```
 
-Binding mở `image_dedup.framework/image_dedup` trước, rồi tới `process()`. Thiếu symbol thì báo `StateError` rõ ràng. Ảnh chọn từ thư viện phải là **file gốc** (không truyền `imageQuality` / `maxWidth` cho `image_picker`). Ảnh HEIC thì app tự giải mã bằng hệ điều hành rồi đưa vào lõi C (xem `ImageCompressor.compressMealPhoto` trong app).
+Binding mở `image_dedup.framework/image_dedup` trước, rồi tới `process()`. Thiếu symbol thì báo `StateError` rõ ràng. Ảnh chọn từ thư viện không được truyền `imageQuality` / `maxWidth` cho `image_picker`. Android khi đó trả nguyên file gốc; iOS thì `image_picker` vẫn luôn mã hoá lại JPEG chất lượng 1.0 qua UIKit, nên so trùng với mini app trên iOS dựa vào dấu vân tay chứ không dựa vào SHA. Ảnh HEIC (lõi C báo `unsupported-format`) thì app tự giải mã bằng hệ điều hành rồi đưa PNG vào lõi C (xem `ImageCompressor.compressMealPhoto` trong app). Xem [docs/TRUNG_ANH_APP_VA_MINIAPP.md](docs/TRUNG_ANH_APP_VA_MINIAPP.md).
 
 ```dart
 // Ảnh đã đăng: file trong cache của cached_network_image (hoặc tải về).
@@ -194,7 +196,7 @@ Ngưỡng nằm ở 3 nơi và **phải sửa cùng lúc**: `src/image_dedup.cpp
 
 - **Chưa chạy trên máy thật.** Mới chạy emulator Android arm64, iOS simulator, Chrome trong app. Bản armeabi-v7a chưa chạy được ở đâu.
 - **Chưa chạy trong WebView của app HanoiWork**: chưa thử Worker dạng module, dung lượng bộ nhớ, CORS ảnh.
-- **HEIC và AVIF chưa hỗ trợ trong C.** libheif vướng bản quyền HEVC.
+- **HEIC và AVIF chưa hỗ trợ trong C.** libheif vướng bản quyền HEVC. App Flutter và mini app trên iOS vẫn check trùng được (giải mã bằng hệ điều hành / WebKit tự đổi sang JPEG); **mini app trên Android gặp HEIC thì báo lỗi** (xem [docs/TRUNG_ANH_APP_VA_MINIAPP.md](docs/TRUNG_ANH_APP_VA_MINIAPP.md) mục 4).
 - **Lỗi bộ nhớ trong C vẫn làm sập app mobile.** Fuzz mới chạy bằng bộ đột biến tự viết, nên chạy libFuzzer nhiều giờ trên CI.
 - **Ảnh đăng bằng cách cũ (canvas) không so được theo SHA với ảnh mới**, chỉ so được bằng dấu vân tay tính từ file tải về. Cách này vẫn dùng được, vì `fingerprintUrl` chạy được với mọi JPEG.
 
